@@ -46,22 +46,25 @@ class ServersInfo {
     vector<int> serverRunVms;
     // 记录虚拟机运行在哪个服务器上
     unordered_map<string, vector<int>> vmOnServer;
+
+    vector<vector<int>> vmOnServer_day;
+    unordered_map<string, int>purchase_day;
+public:
+    long long serverCost, powerCost;
 public:
     //构造函数
     ServersInfo();
     // 尝试在服务器上分配虚拟机资源
     bool choseServer(vector<int>& server, vector<int>& vm, int serverId, string vmId);
     // 处理创建虚拟机操作
-    int addVM(vector<string>& createVmInfo, VMList& vmList);
-
+    void addVM(vector<string>& createVmInfo, ServerList& serverList, VMList& vmList);
     // 处理删除虚拟机操作
     void delVM(vector<string>& delVmInfo);
-
-    // 初始化server，如何初始化购买的服务器是一个大的优化
-    int buyServer(ServerList &serverList);
     // 扩容服务器策略
-    void expansion();
+    void expansion(vector<int>& vm, string vmId, ServerList& serverList);
     // 迁移虚拟机策略
     void migrate();
-    int serverPower();
+    void serverPower();
+    long long totalCost();
+    void shuchu();
 };

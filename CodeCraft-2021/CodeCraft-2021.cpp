@@ -1,4 +1,4 @@
-//#pragma warning(disable:4996)
+#pragma warning(disable:4996)
 #include <iostream>
 #include <stdlib.h>
 #include <string>
@@ -32,15 +32,11 @@ ServersInfo serversInfo;
 
 // 分配策略
 void match(int day) {
-    if (day != 0) serversInfo.expansion();
-    serversInfo.migrate();
-    //    printf("There are %d requests waiting to matching !!\n",requestInfos.size());
     for (auto req : reqList) {
         // 创建虚拟机 还是 删除虚拟机
         int opType = req.size() == 3 ? 1 : 0;
         if (opType) {
-            int resourceEnough = serversInfo.addVM(req, vmList);
-            assert(resourceEnough != -1);
+            serversInfo.addVM(req, serverList, vmList);
         }
         else {
             serversInfo.delVM(req);
@@ -56,8 +52,7 @@ int main() {
     #ifdef TEST
         std::freopen(filePath.c_str(),"rb",stdin);
     #endif
-    // 成本
-    long long SERVERCOST = 0, POWERCOST = 0, TOTALCOST = 0;
+    
     int serverNum;
     string serverType, cpuCores, memorySize, serverCost, powerCost;
     scanf("%d", &serverNum);
@@ -82,7 +77,6 @@ int main() {
     string op, reqVmType, reqId;
 
     // 开始处理请求
-    SERVERCOST = serversInfo.buyServer(serverList);
     for (int day = 0; day < requestdays; day++) {
         scanf("%d", &dayRequestNumber);
         reqList.clear();
@@ -98,15 +92,15 @@ int main() {
             }
         }
         match(day);
-        POWERCOST += serversInfo.serverPower();
+        serversInfo.shuchu();
+        serversInfo.serverPower();
     }
 
     fclose(stdin);
     finish = clock();
-    TOTALCOST = SERVERCOST + POWERCOST;
 #ifdef TEST
     printf("\nusr time: %f s \n", double(finish - start) / CLOCKS_PER_SEC);
-    printf("server cost: %lld \npower cost: %lld \ntotal cost: %lld \n", SERVERCOST, POWERCOST, TOTALCOST);
+    printf("server cost: %lld \npower cost: %lld \ntotal cost: %lld \n", serversInfo.serverCost, serversInfo.powerCost, serversInfo.totalCost());
 #endif
     return 0;
 }

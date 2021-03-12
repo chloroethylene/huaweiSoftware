@@ -85,7 +85,7 @@ void ReqList::clear() {
     requestInfos.clear();
 }
 
-ServersInfo::ServersInfo() :serverNumber(0) {};
+ServersInfo::ServersInfo() :serverNumber(0), serverCost(0), powerCost(0) {};
 
 bool ServersInfo::choseServer(vector<int>& server, vector<int>& vm, int serverId, string vmId) {
     int vmCores = vm[0], vmMemory = vm[1], vmTwoNodes = vm[2];
@@ -98,7 +98,7 @@ bool ServersInfo::choseServer(vector<int>& server, vector<int>& vm, int serverId
             serverMemoryA -= needMemory;
             serverMemoryB -= needMemory;
             vmOnServer[vmId] = vector<int>{ serverId,vmCores,vmMemory,1,2 };
-            cout << "(" << serverId << ")\n";
+            vmOnServer_day.push_back({ serverId });
             return true;
         }
         else {
@@ -109,34 +109,40 @@ bool ServersInfo::choseServer(vector<int>& server, vector<int>& vm, int serverId
         serverCoreA -= vmCores;
         serverMemoryA -= vmMemory;
         vmOnServer[vmId] = vector<int>{ serverId,vmCores,vmMemory,1 };
-        cout << "(" << serverId << ", A)\n";
+        vmOnServer_day.push_back({ serverId,1 });
         return true;
     }
     else if (serverCoreB >= vmCores && serverMemoryB >= vmMemory) {
         serverCoreB -= vmCores;
         serverMemoryB -= vmMemory;
         vmOnServer[vmId] = vector<int>{ serverId,vmCores,vmMemory,2 };
-        cout << "(" << serverId << ", B)\n";
+        vmOnServer_day.push_back({ serverId,2 });
         return true;
     }
     return false;
 }
-int ServersInfo::addVM(vector<string>& createVmInfo, VMList &vmList) {
-    string _reqVmType = createVmInfo[1], _reqId = createVmInfo[2];
+
+void ServersInfo::addVM(vector<string>& createVmInfo, ServerList& serverList, VMList &vmList) {
+    string _reqVmType = createVmInfo[1], _reqId = createVmInfo[2];//需要创建虚机的信息 类型 id
     vector<int> vm = vmList[_reqVmType];
     int success = -1;
-    for (int i = 0; i < serverNumber; i++) {
-        auto& server = sysServerResource[i];
-        if (choseServer(server, vm, i, _reqId)) {
-            //            serverRunVms[i].push_back(_reqId);
-            serverRunVms[i]++;
-            success = 1;
-            break;
-        }
-        assert(server[0] >= 0 && server[1] >= 0 && server[2] >= 0 && server[3] >= 0);
+    if (serverNumber == 0) {
+        expansion(vm, _reqId, serverList);
     }
-    return success;
+    else {
+        for (int i = 0; i < serverNumber; i++) {
+            auto& server = sysServerResource[i];
+            if (choseServer(server, vm, i, _reqId)) {
+                serverRunVms[i]++;
+
+                success = 1;
+                break;
+            }
+        }
+        if (success == -1) expansion(vm, _reqId, serverList);
+    }
 }
+    
 void ServersInfo::delVM(vector<string>& delVmInfo) {
     string _vmId = delVmInfo[1];
     vector<int> _vmInfo = vmOnServer[_vmId];
@@ -164,46 +170,83 @@ void ServersInfo::delVM(vector<string>& delVmInfo) {
         }
     }
 }
-int ServersInfo::buyServer(ServerList& serverList) {
-    int buyCost = 0;
+
+void ServersInfo::expansion(vector<int>&vm, string vmId, ServerList& serverList) {
     string serverType = "hostUY41I";
-    int n = 2000;
-    serverRunVms.resize(n, 0);
-    cout << "(purchase, " << 1 << ")\n";
-    string pauseInfo = "(" + serverType + ", ";
-    pauseInfo += std::to_string(n) + ")";
-    cout << pauseInfo << endl;
-    for (int i = 0; i < n; i++) {
-        // string random_serverType = next(serverInfos.begin(), rand()%serverInfos.size())->first; 
-        sysServerResource[serverNumber++] = serverList[serverType];
-        buyCost += serverList[serverType][4];
+    int n = 1;
+    // string random_serverType = next(serverInfos.begin(), rand()%serverInfos.size())->first; 
+    sysServerResource[serverNumber++] = serverList[serverType];
+    serverRunVms.push_back(0);
+    if (purchase_day.find(serverType) == purchase_day.end())
+        purchase_day[serverType] = 1;
+    else
+        purchase_day[serverType]++;
+
+    int vmCores = vm[0], vmMemory = vm[1], vmTwoNodes = vm[2];
+    int& serverCoreA = sysServerResource[serverNumber - 1][0], & serverCoreB = sysServerResource[serverNumber - 1][1], & serverMemoryA = sysServerResource[serverNumber - 1][2], & serverMemoryB = sysServerResource[serverNumber - 1][3];
+    if (vmTwoNodes) {
+        int needCores = vmCores / 2, needMemory = vmMemory / 2;
+
+        if (serverCoreA >= needCores && serverCoreB >= needCores && serverMemoryA >= needMemory && serverMemoryB >= needMemory) {
+            serverCoreA -= needCores;
+            serverCoreB -= needCores;
+            serverMemoryA -= needMemory;
+            serverMemoryB -= needMemory;
+            vmOnServer[vmId] = vector<int>{ serverNumber - 1,vmCores,vmMemory,1,2 };
+            vmOnServer_day.push_back({ serverNumber - 1 });
+        }
     }
-    return buyCost;
-    /*
-    serverType = serverInfos.begin()->first;
-    // serverType = "host78BMY";
-    pauseInfo ="("+serverType+", ";
-    pauseInfo+= std::to_string(serverNumber)+")";
-    cout<<pauseInfo<<endl;
-    for(int i=0;i<n/2;i++){
-        sysServerResource[serverNumber++] = serverInfos[serverType];
-        SERVERCOST += serverInfos[serverType][4];
+    else if (serverCoreA >= vmCores && serverMemoryA >= vmMemory) {
+        serverCoreA -= vmCores;
+        serverMemoryA -= vmMemory;
+        vmOnServer[vmId] = vector<int>{ serverNumber - 1,vmCores,vmMemory,1 };
+        vmOnServer_day.push_back({ serverNumber - 1,1 });
     }
-    */
-}
-void ServersInfo::expansion() {
-    cout << "(purchase, 0)\n";
+    else if (serverCoreB >= vmCores && serverMemoryB >= vmMemory) {
+        serverCoreB -= vmCores;
+        serverMemoryB -= vmMemory;
+        vmOnServer[vmId] = vector<int>{ serverNumber - 1,vmCores,vmMemory,2 };
+        vmOnServer_day.push_back({ serverNumber - 1,2 });
+
+    }
+    serverRunVms[serverNumber - 1]++;
+    serverCost += serverList[serverType][4];
 }
 void ServersInfo::migrate() {
     cout << "(migration, 0)\n";
 }
-int ServersInfo::serverPower() {
-    int powerCost = 0;
+void ServersInfo::serverPower() {
     for (int i = 0; i < serverNumber; i++) {
         //        if(serverRunVms[i].size() != 0){
         if (serverRunVms[i] != 0) {
             powerCost += sysServerResource[i][5];
         }
     }
-    return powerCost;
+}
+long long ServersInfo::totalCost() {
+    return serverCost + powerCost;
+}
+void ServersInfo::shuchu() {
+    int totalnum = purchase_day.size();
+    cout << "(purchase, " << totalnum << ")\n";
+    for (auto& item : purchase_day) {
+        string pauseInfo = "(" + item.first + ", ";
+        pauseInfo += std::to_string(item.second) + ")";
+        cout << pauseInfo << endl;
+    }
+
+    migrate();
+
+    int totalreq_day = vmOnServer_day.size();
+    for (auto& item : vmOnServer_day) {
+        if (item.size() == 1)
+            cout << "(" << item[0] << ")\n";
+        else if (item[1] == 1)
+            cout << "(" << item[0] << ", A)\n";
+        else
+            cout << "(" << item[0] << ", B)\n";
+    }
+
+    purchase_day.clear();
+    vector<vector<int>>().swap(vmOnServer_day);
 }
