@@ -115,7 +115,7 @@ bool Server::addVM(VM* vm) {
             memorySizeA -= needMemory;
             memorySizeB -= needMemory;
             vm->server = this;
-            vmOnTwoNodes.push_back(vm);
+            vmOnTwoNodes.insert(vm);
 
             return true;
         }
@@ -128,7 +128,7 @@ bool Server::addVM(VM* vm) {
         memorySizeA -= vmMemory;
         vm->server = this;
         vm->node = 'A';
-        vmOnANode.push_back(vm);
+        vmOnANode.insert(vm);
 
         return true;
     }
@@ -137,7 +137,7 @@ bool Server::addVM(VM* vm) {
         memorySizeB -= vmMemory;
         vm->server = this;
         vm->node = 'B';
-        vmOnBNode.push_back(vm);
+        vmOnBNode.insert(vm);
 
         return true;
     }
@@ -153,12 +153,7 @@ void Server::delVM(VM* vm) {
         memorySizeA += memory;
         memorySizeB += memory;
 
-        for (auto it = vmOnTwoNodes.begin(); it != vmOnTwoNodes.end(); ++it) {
-            if (*it == vm) {
-                vmOnTwoNodes.erase(it);
-                break;
-            }
-        }
+        vmOnTwoNodes.erase(vm);
     }
     else {
         int cores = vm->cpuCores, memory = vm->memorySize;
@@ -166,23 +161,13 @@ void Server::delVM(VM* vm) {
             cpuCoresA += cores;
             memorySizeA += memory;
 
-            for (auto it = vmOnANode.begin(); it != vmOnANode.end(); ++it) {
-                if (*it == vm) {
-                    vmOnANode.erase(it);
-                    break;
-                }
-            }
+            vmOnANode.erase(vm);
         }
         else {
             cpuCoresB += cores;
             memorySizeB += memory;
 
-            for (auto it = vmOnBNode.begin(); it != vmOnBNode.end(); ++it) {
-                if (*it == vm) {
-                    vmOnBNode.erase(it);
-                    break;
-                }
-            }
+            vmOnBNode.erase(vm);
         }
     }
 }
@@ -246,52 +231,15 @@ void System::expansion(VM* vm) {
     int vmCores = vm->cpuCores, vmMemory = vm->memorySize;
     bool vmTwoNodes = vm->doubleNodes;
 
-    string serverType;
-    while (1) {
+    string serverType = serverList.random_choose();
+    Server* server = new Server(serverType);
+
+    while(!server->addVM(vm)) {
         serverType = serverList.random_choose();
-        int serverCoreA = serverList[serverType][0], serverCoreB = serverList[serverType][1], serverMemoryA = serverList[serverType][2], serverMemoryB = serverList[serverType][3];
-        if (vmTwoNodes) {
-            int needCores = vmCores / 2, needMemory = vmMemory / 2;
-
-            if (serverCoreA >= needCores && serverCoreB >= needCores && serverMemoryA >= needMemory && serverMemoryB >= needMemory) {
-                Server* server = new Server(serverType);
-                server->cpuCoresA -= needCores;
-                server->cpuCoresB -= needCores;
-                server->memorySizeA -= needMemory;
-                server->memorySizeB -= needMemory;
-
-                purchase_day[serverType].push_back(server);
-                vm->server = server;
-                server->vmOnTwoNodes.push_back(vm);
-
-                break;
-            }
-        }
-        else if (serverCoreA >= vmCores && serverMemoryA >= vmMemory) {
-            Server* server = new Server(serverType);
-            server->cpuCoresA -= vmCores;
-            server->memorySizeA -= vmMemory;
-
-            purchase_day[serverType].push_back(server);
-            vm->server = server;
-            vm->node = 'A';
-            server->vmOnANode.push_back(vm);
-
-            break;
-        }
-        else if (serverCoreB >= vmCores && serverMemoryB >= vmMemory) {
-            Server* server = new Server(serverType);
-            server->cpuCoresB -= vmCores;
-            server->memorySizeB -= vmMemory;
-
-            purchase_day[serverType].push_back(server);
-            vm->server = server;
-            vm->node = 'A';
-            server->vmOnANode.push_back(vm);
-
-            break;
-        }
+        delete server;
+        server = new Server(serverType);
     }
+    purchase_day[serverType].push_back(server);
     serverCost += serverList[serverType][4];
 }
 

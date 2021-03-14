@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 using namespace std;
 
@@ -61,9 +62,9 @@ public:
     int purchaseCost;
     int oneDayPowerCost;
     //记录所有放置在该服务器上的虚拟机
-    vector<VM*> vmOnANode;
-    vector<VM*> vmOnBNode;
-    vector<VM*> vmOnTwoNodes;
+    unordered_set<VM*> vmOnANode;
+    unordered_set<VM*> vmOnBNode;
+    unordered_set<VM*> vmOnTwoNodes;
     //记录本身的ID方便从虚拟机可以查找到服务器ID
     int id;
 

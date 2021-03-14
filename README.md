@@ -4,6 +4,7 @@
 v1.0 参考https://zhuanlan.zhihu.com/p/356155386 的baseline1.0
 v2.0 将部分全局变量和函数封装为类
 v2.1 去掉buyserver，改为每次add的时候expansion 结果：1366926260
-v2.2 考虑expansion时当expansion的服务器仍然容量不足时的情况，再次递归调用；
+v2.2 考虑expansion时当expansion的服务器仍然容量不足时的情况，再次递归调用
 v2.3 提交有bug
 v3.0 解决了之前的bug，现在expansion时能够随机选取服务器了，一定程度上简化了代码逻辑
+v3.1 解决了上一版中的一些小bug，进一步降低了代码的耦合，将Server中对虚拟机的记录由vector改为unordered_set以节约查找时间
