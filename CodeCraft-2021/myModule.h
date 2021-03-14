@@ -6,20 +6,28 @@
 #include <vector>
 using namespace std;
 
+class ServerList;
+class VMList;
+class ReqList;
+class Server;
+class VM;
+class System;
+
 //存储备选服务器列表
 class ServerList {
     unordered_map<string, vector<int>> serverInfos;
 public:
-    vector<int>& operator[](string& s);
+    vector<int>& operator[](const string& s);
     void add(string& serverType, string& cpuCores, string& memorySize, string& serverCost, string& powerCost);
+    string random_choose() const;
 };
 
 //存储备选虚拟机列表
 class VMList {
     unordered_map<string, vector<int>> vmInfos;
 public:
-    vector<int>& operator[](string& s);
-	void add(string& vmType, string& vmCpuCores, string& vmMemory, string& vmTwoNodes);
+    vector<int>& operator[](const string& s);
+    void add(string& vmType, string& vmCpuCores, string& vmMemory, string& vmTwoNodes);
 };
 
 //存储用户的请求列表
@@ -34,37 +42,75 @@ public:
     void generateRequest(string& op, string& reqId);
     void clear();
 };
+/*
+class AllProcessInfos {
+    vector<string> res;
+public:
+    void addInfo();
+};
+*/
+
+class Server {
+public:
+    //基本信息
+    string serverType;
+    int cpuCoresA;
+    int cpuCoresB;
+    int memorySizeA;
+    int memorySizeB;
+    int purchaseCost;
+    int oneDayPowerCost;
+    //记录所有放置在该服务器上的虚拟机
+    vector<VM*> vmOnANode;
+    vector<VM*> vmOnBNode;
+    vector<VM*> vmOnTwoNodes;
+    //记录本身的ID方便从虚拟机可以查找到服务器ID
+    int id;
+
+    Server(const string& serverType);
+    bool addVM(VM* vm);
+    void delVM(VM* vm);
+    int numOfVM()const;
+};
+
+class VM {
+public:
+    //基本信息
+    string vmType;
+    int cpuCores;
+    int memorySize;
+    bool doubleNodes;
+    //记录该虚拟机放置的服务器
+    Server* server;
+    //记录放置在哪个节点
+    char node;
+
+    VM(const string& vmType);
+};
 
 //存储此时拥有的所有服务器信息
-class ServersInfo {
-    // 已有的服务器数量
-    int serverNumber;
-    // 服务器的ID->服务器信息
-    unordered_map<int, vector<int>> sysServerResource;
-    //unordered_map<int,vector<string>> serverRunVms;
-    // 服务器的ID->该服务器上运行的虚拟机数量
-    vector<int> serverRunVms;
-    // 记录虚拟机运行在哪个服务器上
-    unordered_map<string, vector<int>> vmOnServer;
+class System {
+    // 服务器的ID->服务器
+    vector<Server*> servers;
+    // 虚拟机的ID->虚拟机
+    unordered_map<string, VM*> vms;
 
-    vector<vector<int>> vmOnServer_day;
-    unordered_map<string, int>purchase_day;
+    unordered_map<string, vector<Server*>>purchase_day;
+    vector<string> addList_day;
 public:
     long long serverCost, powerCost;
 public:
     //构造函数
-    ServersInfo();
-    // 尝试在服务器上分配虚拟机资源
-    bool choseServer(vector<int>& server, vector<int>& vm, int serverId, string vmId);
+    System();
     // 处理创建虚拟机操作
-    void addVM(vector<string>& createVmInfo, ServerList& serverList, VMList& vmList);
+    void addVM(vector<string>& createVmInfo);
     // 处理删除虚拟机操作
     void delVM(vector<string>& delVmInfo);
     // 扩容服务器策略
-    void expansion(vector<int>& vm, string vmId, ServerList& serverList);
+    void expansion(VM* vm);
     // 迁移虚拟机策略
     void migrate();
     void serverPower();
-    long long totalCost();
+    long long totalCost()const;
     void shuchu();
 };
