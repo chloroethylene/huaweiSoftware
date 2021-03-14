@@ -81,7 +81,7 @@ int main() {
     string op, reqVmType, reqId;
 
     // 开始处理请求
-    for (int day = 0; day < 5/*requestdays*/; day++) {
+    for (int day = 0; day < requestdays; day++) {
         scanf("%d", &dayRequestNumber);
         reqList.clear();
         for (int i = 0; i < dayRequestNumber; i++) {

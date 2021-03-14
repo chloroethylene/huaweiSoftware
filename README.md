@@ -6,3 +6,4 @@ v2.0 将部分全局变量和函数封装为类
 v2.1 去掉buyserver，改为每次add的时候expansion 结果：1366926260
 v2.2 考虑expansion时当expansion的服务器仍然容量不足时的情况，再次递归调用；
 v2.3 提交有bug
+v3.0 解决了之前的bug，现在expansion时能够随机选取服务器了，一定程度上简化了代码逻辑

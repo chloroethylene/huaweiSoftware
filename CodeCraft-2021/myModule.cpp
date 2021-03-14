@@ -238,6 +238,7 @@ void System::delVM(vector<string>& delVmInfo) {
     Server* server = vm->server;
     server->delVM(vm);
     delete vm;
+    vms.erase(_vmId);
 }
 
 void System::expansion(VM* vm) {
@@ -253,12 +254,12 @@ void System::expansion(VM* vm) {
             int needCores = vmCores / 2, needMemory = vmMemory / 2;
 
             if (serverCoreA >= needCores && serverCoreB >= needCores && serverMemoryA >= needMemory && serverMemoryB >= needMemory) {
-                serverCoreA -= needCores;
-                serverCoreB -= needCores;
-                serverMemoryA -= needMemory;
-                serverMemoryB -= needMemory;
-
                 Server* server = new Server(serverType);
+                server->cpuCoresA -= needCores;
+                server->cpuCoresB -= needCores;
+                server->memorySizeA -= needMemory;
+                server->memorySizeB -= needMemory;
+
                 purchase_day[serverType].push_back(server);
                 vm->server = server;
                 server->vmOnTwoNodes.push_back(vm);
@@ -267,10 +268,10 @@ void System::expansion(VM* vm) {
             }
         }
         else if (serverCoreA >= vmCores && serverMemoryA >= vmMemory) {
-            serverCoreA -= vmCores;
-            serverMemoryA -= vmMemory;
-
             Server* server = new Server(serverType);
+            server->cpuCoresA -= vmCores;
+            server->memorySizeA -= vmMemory;
+
             purchase_day[serverType].push_back(server);
             vm->server = server;
             vm->node = 'A';
@@ -279,10 +280,10 @@ void System::expansion(VM* vm) {
             break;
         }
         else if (serverCoreB >= vmCores && serverMemoryB >= vmMemory) {
-            serverCoreB -= vmCores;
-            serverMemoryB -= vmMemory;
-
             Server* server = new Server(serverType);
+            server->cpuCoresB -= vmCores;
+            server->memorySizeB -= vmMemory;
+
             purchase_day[serverType].push_back(server);
             vm->server = server;
             vm->node = 'A';
