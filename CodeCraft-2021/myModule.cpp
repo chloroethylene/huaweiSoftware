@@ -31,6 +31,17 @@ void ServerList::add(string& serverType, string& cpuCores, string& memorySize, s
     serverInfos[_serverType] = vector<int>{ _cpuCores / 2 ,_cpuCores / 2,_memorySize / 2,_memorySize / 2,_serverCost,_powerCost };
 }
 
+void ServerList::read() {
+    int serverNum;
+    string serverType, cpuCores, memorySize, serverCost, powerCost;
+    scanf("%d", &serverNum);
+
+    for (int i = 0; i < serverNum; i++) {
+        cin >> serverType >> cpuCores >> memorySize >> serverCost >> powerCost;
+        this->add(serverType, cpuCores, memorySize, serverCost, powerCost);
+    }
+}
+
 vector<int>& ServerList::operator[](const string& s) {
     return serverInfos[s];
 }
@@ -62,37 +73,74 @@ void VMList::add(string& vmType, string& vmCpuCores, string& vmMemory, string& v
     vmInfos[_vmType] = vector<int>{ _vmCpuCores,_vmMemory,_vmTwoNodes };
 }
 
+void VMList::read() {
+    int vmNumber = 0;
+    scanf("%d", &vmNumber);
+
+    string vmType, vmCpuCores, vmMemory, vmTwoNodes;
+    for (int i = 0; i < vmNumber; i++) {
+        cin >> vmType >> vmCpuCores >> vmMemory >> vmTwoNodes;
+        this->add(vmType, vmCpuCores, vmMemory, vmTwoNodes);
+    }
+}
+
 vector<int>& VMList::operator[](const string& s) {
     return vmInfos[s];
 }
 
-vector<vector<string>>::iterator ReqList::begin() {
+vector<vector<vector<string>>>::iterator ReqList::begin() {
     return requestInfos.begin();
 }
 
-vector<vector<string>>::iterator ReqList::end() {
+vector<vector<vector<string>>>::iterator ReqList::end() {
     return requestInfos.end();
 }
 
-void ReqList::generateRequest(string& op, string& reqVmType, string& reqId) {
+vector<vector<string>>& ReqList::operator[](const int& day) {
+    return requestInfos[day];
+}
+
+void ReqList::generateRequest(string& op, string& reqVmType, string& reqId, int day) {
     string _op, _reqVmType, _reqId;
     _op = op.substr(1, op.size() - 1);
     _reqVmType = reqVmType.substr(0, reqVmType.size() - 1);
     _reqId = reqId.substr(0, reqId.size() - 1);
-    requestInfos.push_back(vector<string>{_op, _reqVmType, _reqId});
+    requestInfos[day].push_back(vector<string>{_op, _reqVmType, _reqId});
 }
 
-void ReqList::generateRequest(string& op, string& reqId) {
+void ReqList::generateRequest(string& op, string& reqId, int day) {
     string _op, _reqId;
     _reqId = reqId.substr(0, reqId.size() - 1);
     _op = op.substr(1, op.size() - 1);
-    requestInfos.push_back(vector<string>{_op, _reqId});
+    requestInfos[day].push_back(vector<string>{_op, _reqId});
 }
 
-void ReqList::clear() {
-    requestInfos.clear();
+void ReqList::read() {
+    int requestdays = 0, dayRequestNumber = 0;
+    scanf("%d", &requestdays);
+    string op, reqVmType, reqId;
+
+    // 开始处理请求
+    for (int day = 0; day < requestdays; ++day) {
+        scanf("%d", &dayRequestNumber);
+        requestInfos.emplace_back();
+        for (int i = 0; i < dayRequestNumber; ++i) {
+            cin >> op;
+            if (op[1] == 'a') {
+                cin >> reqVmType >> reqId;
+                this->generateRequest(op, reqVmType, reqId, day);
+            }
+            else {
+                cin >> reqId;
+                this->generateRequest(op, reqId, day);
+            }
+        }
+    }
 }
 
+vector<vector<vector<string>>>::size_type ReqList::size() {
+    return requestInfos.size();
+}
 
 Server::Server(const string& serverType) {
     this->serverType = serverType;
@@ -244,7 +292,7 @@ void System::expansion(VM* vm) {
 }
 
 void System::migrate() {
-    cout << "(migration, 0)\n";
+    output.push_back("(migration, 0)\n");
 }
 
 void System::serverPower() {
@@ -261,11 +309,9 @@ long long System::totalCost()const {
 
 void System::shuchu() {
     int totalnum = purchase_day.size();
-    cout << "(purchase, " << totalnum << ")\n";
+    output.push_back("(purchase, " + to_string(totalnum) + ")\n");
     for (auto& item : purchase_day) {
-        string pauseInfo = "(" + item.first + ", ";
-        pauseInfo += std::to_string(item.second.size()) + ")";
-        cout << pauseInfo << endl;
+        output.push_back("(" + item.first + ", " + to_string(item.second.size()) + ")\n");
         for (Server*& server : item.second) {
             server->id = servers.size();
             servers.push_back(server);
@@ -277,9 +323,9 @@ void System::shuchu() {
     for (const string& vmID : addList_day) {
         VM* vm = vms[vmID];
         if (vm->doubleNodes)
-            cout << "(" << vm->server->id << ")\n";
+            output.push_back("(" + to_string(vm->server->id) + ")\n");
         else
-            cout << "(" << vm->server->id << ", " << vm->node << ")\n";
+            output.push_back("(" + to_string(vm->server->id) + ", " + vm->node + ")\n");
     }
 
     purchase_day.clear();

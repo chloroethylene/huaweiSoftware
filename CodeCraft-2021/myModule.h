@@ -20,6 +20,7 @@ class ServerList {
 public:
     vector<int>& operator[](const string& s);
     void add(string& serverType, string& cpuCores, string& memorySize, string& serverCost, string& powerCost);
+    void read();
     string random_choose() const;
 };
 
@@ -29,27 +30,24 @@ class VMList {
 public:
     vector<int>& operator[](const string& s);
     void add(string& vmType, string& vmCpuCores, string& vmMemory, string& vmTwoNodes);
+    void read();
 };
 
 //存储用户的请求列表
 class ReqList {
-    vector<vector<string>> requestInfos;
-public:
-    vector<vector<string>>::iterator begin();
-    vector<vector<string>>::iterator end();
+    //[第几天][第几条]=>vector<string>
+    vector<vector<vector<string>>> requestInfos;
     // 解析用户添加请求
-    void generateRequest(string& op, string& reqVmType, string& reqId);
+    void generateRequest(string& op, string& reqVmType, string& reqId, int day);
     // 解析用户删除请求
-    void generateRequest(string& op, string& reqId);
-    void clear();
-};
-/*
-class AllProcessInfos {
-    vector<string> res;
+    void generateRequest(string& op, string& reqId, int day);
 public:
-    void addInfo();
+    vector<vector<vector<string>>>::iterator begin();
+    vector<vector<vector<string>>>::iterator end();
+    vector<vector<string>>& operator[](const int& ind);
+    vector<vector<vector<string>>>::size_type size();
+    void read();
 };
-*/
 
 class Server {
 public:
@@ -91,15 +89,17 @@ public:
 
 //存储此时拥有的所有服务器信息
 class System {
-    // 服务器的ID->服务器
+    // 服务器的ID=>服务器
     vector<Server*> servers;
-    // 虚拟机的ID->虚拟机
+    // 虚拟机的ID=>虚拟机
     unordered_map<string, VM*> vms;
 
     unordered_map<string, vector<Server*>>purchase_day;
     vector<string> addList_day;
+
 public:
     long long serverCost, powerCost;
+    vector<string> output;
 public:
     //构造函数
     System();
