@@ -1,9 +1,13 @@
+#pragma warning(disable:4996)
+//#pragma once
 #include "myModule.h"
 #include <string>
 #include <vector>
 #include <assert.h>
 #include <iterator>
 #include <cstdlib>
+#include <algorithm>
+#include <math.h>
 using namespace std;
 
 extern ServerList serverList;
@@ -106,6 +110,7 @@ void ReqList::generateRequest(string& op, string& reqVmType, string& reqId, int 
     _reqVmType = reqVmType.substr(0, reqVmType.size() - 1);
     _reqId = reqId.substr(0, reqId.size() - 1);
     requestInfos[day].push_back(vector<string>{_op, _reqVmType, _reqId});
+   
 }
 
 void ReqList::generateRequest(string& op, string& reqId, int day) {
@@ -113,6 +118,39 @@ void ReqList::generateRequest(string& op, string& reqId, int day) {
     _reqId = reqId.substr(0, reqId.size() - 1);
     _op = op.substr(1, op.size() - 1);
     requestInfos[day].push_back(vector<string>{_op, _reqId});
+
+}
+
+bool cmp1(vector<string>& a, vector<string>& b) {
+    int a_cpu = vmList.vmInfos[a[1]][0];
+    int a_mem = vmList.vmInfos[a[1]][1];
+    double a_per = double(sqrt(a_cpu * a_cpu + a_mem * a_mem));
+
+    int b_cpu = vmList.vmInfos[b[1]][0];
+    int b_mem = vmList.vmInfos[b[1]][1];
+    double b_per = double(sqrt(b_cpu * b_cpu + b_mem * b_mem));
+
+        return a_per > b_per;
+}
+
+
+void ReqList::create_opInfos() {
+    this->operateInfos = this->requestInfos;
+    for (int day = 0; day < requestInfos.size(); ++day) {
+        vector<vector<string>>::iterator iter1 = operateInfos[day].begin();
+        vector<vector<string>>::iterator iter2 = operateInfos[day].begin();
+        while (iter2 != operateInfos[day].end()) {
+            if ((*iter2).size() != 3) {
+                sort(iter1,iter2,cmp1);
+                iter1 = iter2 + 1;
+                }
+            iter2++;
+            
+        }
+        if (iter1!= operateInfos[day].end() && iter2 == operateInfos[day].end()) {
+                sort(iter1, iter2, cmp1);
+        }
+    }
 }
 
 void ReqList::read() {
@@ -133,6 +171,7 @@ void ReqList::read() {
             else {
                 cin >> reqId;
                 this->generateRequest(op, reqId, day);
+
             }
         }
     }
@@ -238,7 +277,7 @@ void System::addVM(vector<string>& createVmInfo) {
     string _reqVmType = createVmInfo[1], _reqId = createVmInfo[2];//需要创建虚机的信息 类型 id
     VM* vm = new VM(_reqVmType);
     vms[_reqId] = vm;
-    addList_day.push_back(_reqId);
+    //addList_day.push_back(_reqId);
     //先检查之前买的服务器能否放下
     int success = -1;
     for (Server*& server:servers) {

@@ -1,4 +1,4 @@
-#pragma warning(disable:4996)
+//#pragma warning(disable:4996)
 #include <iostream>
 #include <stdlib.h>
 #include <string>
@@ -11,7 +11,7 @@
 
 using namespace std;
 
-#define TEST
+//#define TEST
 
 // 服务器信息
 ServerList serverList;
@@ -23,16 +23,24 @@ ReqList reqList;
 System serversInfo;
 
 #ifdef TEST
-const string filePath = "C:/Users/jjy/Desktop/huaweiSoftware/vsProject/training-data/training-2.txt";
+const string filePath = "E:/cs/2021huaweitiaozhan/training-2.txt";
 
 #endif
 
-//unordered_map<int,vector<string>> requestAddInfos;
-//vector<int> requestDelInfos;
 
 // 分配策略
 void match(int day) {
-    for (auto req : reqList[day]) {
+
+    for (int i = 0; i < reqList[day].size(); i++) {
+        if (reqList[day][i].size() == 3) {
+            serversInfo.addVM(reqList.operateInfos[day][i]);
+            serversInfo.addList_day.push_back(reqList[day][i][2]);
+        }
+        else {
+            serversInfo.delVM(reqList.operateInfos[day][i]);
+        }
+    }
+    /*for (auto req : reqList[day]) {
         // 创建虚拟机 还是 删除虚拟机
         if (req.size() == 3) {
             serversInfo.addVM(req);
@@ -40,7 +48,9 @@ void match(int day) {
         else {
             serversInfo.delVM(req);
         }
-    }
+        
+
+    }*/
 }
 
 int main() {
@@ -56,6 +66,7 @@ int main() {
     serverList.read();
     vmList.read();
     reqList.read();
+    reqList.create_opInfos();
 
     // 开始处理请求
     for (int day = 0; day < reqList.size(); ++day) {

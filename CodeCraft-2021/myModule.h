@@ -26,8 +26,9 @@ public:
 
 //存储备选虚拟机列表
 class VMList {
-    unordered_map<string, vector<int>> vmInfos;
+    //unordered_map<string, vector<int>> vmInfos;
 public:
+    unordered_map<string, vector<int>> vmInfos;//zahuishi
     vector<int>& operator[](const string& s);
     void add(string& vmType, string& vmCpuCores, string& vmMemory, string& vmTwoNodes);
     void read();
@@ -36,17 +37,22 @@ public:
 //存储用户的请求列表
 class ReqList {
     //[第几天][第几条]=>vector<string>
-    vector<vector<vector<string>>> requestInfos;
+    //vector<vector<vector<string>>> requestInfos;
+   // vector<vector<vector<string>>> operateInfos;
     // 解析用户添加请求
     void generateRequest(string& op, string& reqVmType, string& reqId, int day);
     // 解析用户删除请求
     void generateRequest(string& op, string& reqId, int day);
 public:
+    vector<vector<vector<string>>> requestInfos;
+    vector<vector<vector<string>>> operateInfos;
     vector<vector<vector<string>>>::iterator begin();
     vector<vector<vector<string>>>::iterator end();
     vector<vector<string>>& operator[](const int& ind);
     vector<vector<vector<string>>>::size_type size();
+    void create_opInfos();
     void read();
+
 };
 
 class Server {
@@ -95,9 +101,10 @@ class System {
     unordered_map<string, VM*> vms;
 
     unordered_map<string, vector<Server*>>purchase_day;
-    vector<string> addList_day;
+    //vector<string> addList_day;
 
 public:
+    vector<string> addList_day;
     long long serverCost, powerCost;
     vector<string> output;
 public:
