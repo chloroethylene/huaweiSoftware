@@ -1,59 +1,18 @@
 //#pragma once
 #include <iostream>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <set>
+#include "basicInfos.h"
+
 using namespace std;
 
-class ServerList;
-class VMList;
-class ReqList;
 class Server;
 class VM;
 class System;
-
-//存储备选服务器列表
-class ServerList {
-    unordered_map<string, vector<int>> serverInfos;
-public:
-    vector<int>& operator[](const string& s);
-    void add(string& serverType, string& cpuCores, string& memorySize, string& serverCost, string& powerCost);
-    void read();
-    string random_choose() const;
-};
-
-//存储备选虚拟机列表
-class VMList {
-    //unordered_map<string, vector<int>> vmInfos;
-public:
-    unordered_map<string, vector<int>> vmInfos;//zahuishi
-    vector<int>& operator[](const string& s);
-    void add(string& vmType, string& vmCpuCores, string& vmMemory, string& vmTwoNodes);
-    void read();
-};
-
-//存储用户的请求列表
-class ReqList {
-    //[第几天][第几条]=>vector<string>
-    //vector<vector<vector<string>>> requestInfos;
-   // vector<vector<vector<string>>> operateInfos;
-    // 解析用户添加请求
-    void generateRequest(string& op, string& reqVmType, string& reqId, int day);
-    // 解析用户删除请求
-    void generateRequest(string& op, string& reqId, int day);
-public:
-    vector<vector<vector<string>>> requestInfos;
-    vector<vector<vector<string>>> operateInfos;
-    vector<vector<vector<string>>>::iterator begin();
-    vector<vector<vector<string>>>::iterator end();
-    vector<vector<string>>& operator[](const int& ind);
-    vector<vector<vector<string>>>::size_type size();
-    void create_opInfos();
-    void read();
-
-};
 
 class Server {
 public:
@@ -73,8 +32,11 @@ public:
     int id;
 
     Server(const string& serverType);
+    bool canAdd(VM* vm)const;
     bool addVM(VM* vm);
     void delVM(VM* vm);
+    //利用key来对server进行排序
+    double key()const;
     int numOfVM()const;
 };
 
@@ -93,23 +55,36 @@ public:
     VM(const string& vmType);
 };
 
+class cmpServer {
+public:
+    bool operator()(const Server* server1, const Server* server2)const {
+        return server1->key() < server2->key();
+    }
+};
+
 //存储此时拥有的所有服务器信息
 class System {
-    // 服务器的ID=>服务器
+    //添加虚拟机时的服务器检查顺序，包括之前的和当天的所有服务器
+    multiset<Server*, cmpServer> serversSorted;
+    //当天之前的服务器ID=>服务器
     vector<Server*> servers;
-    // 虚拟机的ID=>虚拟机
+    //虚拟机的ID=>虚拟机
     unordered_map<string, VM*> vms;
-
+    //当天购买的服务器
     unordered_map<string, vector<Server*>>purchase_day;
-    //vector<string> addList_day;
-
+    //查找首次适应的服务器，并将其从红黑树中删除
+    bool firstFit(VM* vm);
+    //对某个服务器更新红黑树
+    void removeServer(Server* server);
 public:
+    //当天添加的虚拟机的ID
     vector<string> addList_day;
     long long serverCost, powerCost;
     vector<string> output;
 public:
     //构造函数
     System();
+    
     // 处理创建虚拟机操作
     void addVM(vector<string>& createVmInfo);
     // 处理删除虚拟机操作
