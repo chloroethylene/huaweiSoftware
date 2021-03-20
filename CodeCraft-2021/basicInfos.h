@@ -40,6 +40,7 @@ class ReqList {
     // 解析用户删除请求
     void generateRequest(string& op, string& reqId, int day);
 public:
+    unordered_map<string, vector<int>> vm_ttl;
     //[第几天][第几条]=>vector<string>
     vector<vector<vector<string>>> requestInfos;
     vector<vector<vector<string>>> operateInfos;

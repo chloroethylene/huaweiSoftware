@@ -1,3 +1,4 @@
+//#pragma warning(disable:4996)
 #include <string>
 #include <vector>
 #include <cassert>
@@ -36,17 +37,21 @@ void ServerList::add(string& serverType, string& cpuCores, string& memorySize, s
 
 void ServerList::self_sort() {
     auto cmp = [](const pair<string, vector<int>>& a, const pair<string, vector<int>>& b)->bool {
-        int a_cpu = a.second[0] + a.second[1];
+        /*int a_cpu = a.second[0] + a.second[1];
         int a_mem = a.second[2] + a.second[3];
         int a_price = a.second[4];
-        double a_per = double(sqrt(a_cpu * a_cpu + a_mem * a_mem));
+        double a_per = double(a_cpu  + a_mem );*/
+        //double a_per = double(sqrt(a_cpu * a_cpu + a_mem * a_mem));
 
-        int b_cpu = b.second[0] + b.second[1];
+        /*int b_cpu = b.second[0] + b.second[1];
         int b_mem = b.second[2] + b.second[3];
+        int b_price = b.second[4];*/
+        //double b_per = double(sqrt(b_cpu * b_cpu + b_mem * b_mem));
+        //double b_per = double(b_cpu  + b_mem );
+        int a_price = a.second[4];
         int b_price = b.second[4];
-        double b_per = double(sqrt(b_cpu * b_cpu + b_mem * b_mem));
 
-        return a_per < b_per;
+        return a_price < b_price;
     };
     for (auto& item : serverInfos) {
         servernum_str.push_back(make_pair(item.first, item.second));
@@ -156,6 +161,7 @@ void ReqList::generateRequest(string& op, string& reqVmType, string& reqId, int 
     _reqVmType = reqVmType.substr(0, reqVmType.size() - 1);
     _reqId = reqId.substr(0, reqId.size() - 1);
     requestInfos[day].push_back(vector<string>{_op, _reqVmType, _reqId});
+    vm_ttl[_reqId].push_back(day);
 }
 
 void ReqList::generateRequest(string& op, string& reqId, int day) {
@@ -163,21 +169,24 @@ void ReqList::generateRequest(string& op, string& reqId, int day) {
     _reqId = reqId.substr(0, reqId.size() - 1);
     _op = op.substr(1, op.size() - 1);
     requestInfos[day].push_back(vector<string>{_op, _reqId});
+    vm_ttl[_reqId].push_back(day);
 }
 
 
 
 void ReqList::create_opInfos() {
-    auto cmp1 = [](vector<string>& a, vector<string>& b)->bool {
-        int a_cpu = vmList.vmInfos[a[1]][0];
+    auto cmp1 = [this](vector<string>& a, vector<string>& b)->bool {
+        int a_ttl = vm_ttl[a[2]][1]- vm_ttl[a[2]][0];
+        /*int a_cpu = vmList.vmInfos[a[1]][0];
         int a_mem = vmList.vmInfos[a[1]][1];
-        double a_per = double(sqrt(a_cpu * a_cpu + a_mem * a_mem));
+        double a_per = double(sqrt(a_cpu* a_cpu + a_mem* a_mem));//double(sqrt(a_cpu * a_cpu + a_mem * a_mem));*/
 
-        int b_cpu = vmList.vmInfos[b[1]][0];
+        int b_ttl = vm_ttl[b[2]][1]- vm_ttl[b[2]][0];
+        /*int b_cpu = vmList.vmInfos[b[1]][0];
         int b_mem = vmList.vmInfos[b[1]][1];
-        double b_per = double(sqrt(b_cpu * b_cpu + b_mem * b_mem));
+        double b_per = double(sqrt(b_cpu* b_cpu + b_mem* b_mem));//double(sqrt(b_cpu * b_cpu + b_mem * b_mem));*/
 
-        return a_per > b_per;
+        return a_ttl > b_ttl;
     };
 
     this->operateInfos = this->requestInfos;
@@ -217,6 +226,11 @@ void ReqList::read() {
                 cin >> reqId;
                 this->generateRequest(op, reqId, day);
             }
+        }
+    }
+    for (auto& item : vm_ttl) {
+        if (item.second.size() == 1) {
+            item.second.push_back(requestdays-1);
         }
     }
 }

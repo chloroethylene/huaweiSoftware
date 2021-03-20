@@ -1,4 +1,4 @@
-//#pragma once
+#pragma once
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -58,7 +58,7 @@ public:
 class cmpServer {
 public:
     bool operator()(const Server* server1, const Server* server2)const {
-        return server1->key() < server2->key();
+        return server1->key() < server2->key();//<
     }
 };
 

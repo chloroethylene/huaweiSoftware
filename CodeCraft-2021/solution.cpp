@@ -1,3 +1,4 @@
+//#pragma warning(disable:4996)
 #include <string>
 #include <vector>
 #include <cassert>
@@ -30,6 +31,7 @@ bool Server::canAdd(VM* vm)const {
         if (cpuCoresA >= needCores && cpuCoresB >= needCores && memorySizeA >= needMemory && memorySizeB >= needMemory) return true;
         else return false;
     }
+    
     else if (cpuCoresA >= vmCores && memorySizeA >= vmMemory) return true;
     else if (cpuCoresB >= vmCores && memorySizeB >= vmMemory) return true;
     return false;
@@ -54,7 +56,48 @@ bool Server::addVM(VM* vm) {
             return false;
         }
     }
-    else if (cpuCoresA >= vmCores && memorySizeA >= vmMemory) {
+    int resCoreA = cpuCoresA - vmCores;
+    int resCoreB = cpuCoresB - vmCores;
+    int resMemoryA = memorySizeA - vmMemory;
+    int resMemoryB = memorySizeB - vmMemory;
+    if (resCoreB < 0 || resMemoryB < 0 ) {
+        cpuCoresA -= vmCores;
+        memorySizeA -= vmMemory;
+        vm->server = this;
+        vm->node = 'A';
+        vmOnANode.insert(vm);
+
+        return true;
+    }
+    if (resCoreA < 0 || resMemoryA < 0) {
+        cpuCoresB -= vmCores;
+        memorySizeB -= vmMemory;
+        vm->server = this;
+        vm->node = 'B';
+        vmOnBNode.insert(vm);
+
+        return true;
+    }
+    if (resCoreB + resMemoryB >= resCoreA + resMemoryA) {
+        cpuCoresB -= vmCores;
+        memorySizeB -= vmMemory;
+        vm->server = this;
+        vm->node = 'B';
+        vmOnBNode.insert(vm);
+
+        return true;
+    }
+    else {
+        cpuCoresA -= vmCores;
+        memorySizeA -= vmMemory;
+        vm->server = this;
+        vm->node = 'A';
+        vmOnANode.insert(vm);
+
+        return true;
+    }
+
+    /*else if (cpuCoresA >= vmCores && memorySizeA >= vmMemory) {
         cpuCoresA -= vmCores;
         memorySizeA -= vmMemory;
         vm->server = this;
@@ -71,7 +114,7 @@ bool Server::addVM(VM* vm) {
         vmOnBNode.insert(vm);
 
         return true;
-    }
+    }*/
     return false;
 }
 
@@ -110,8 +153,8 @@ int Server::numOfVM()const {
 double Server::key()const {
     int cpuCores = cpuCoresA + cpuCoresB;
     int memorySize = memorySizeA + memorySizeB;
-    double free = double(sqrt(cpuCores * cpuCores + memorySize * memorySize));
-    return free;
+    double free = double(cpuCores + memorySize);//double(sqrt(cpuCores * cpuCores + memorySize * memorySize));
+    return  free;//free
 }
 
 VM::VM(const string& vmType) {
