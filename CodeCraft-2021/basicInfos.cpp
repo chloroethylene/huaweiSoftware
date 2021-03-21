@@ -173,7 +173,6 @@ void ReqList::generateRequest(string& op, string& reqId, int day) {
 }
 
 
-
 void ReqList::create_opInfos() {
     auto cmp1 = [this](vector<string>& a, vector<string>& b)->bool {
         int a_ttl = vm_ttl[a[2]][1]- vm_ttl[a[2]][0];

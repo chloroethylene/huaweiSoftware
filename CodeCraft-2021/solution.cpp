@@ -196,11 +196,12 @@ void System::removeServer(Server* server) {
 System::System() :serverCost(0), powerCost(0) {};
 
 void System::addVM(vector<string>& createVmInfo) {
-    string _reqVmType = createVmInfo[1], _reqId = createVmInfo[2];//ÐèÒª´´½¨Ðé»úµÄÐÅÏ¢ ÀàÐÍ id
+    string _reqVmType = createVmInfo[1], _reqId = createVmInfo[2];//ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ ï¿½ï¿½ï¿½ï¿½ id
     VM* vm = new VM(_reqVmType);
+    vm->myID = _reqId;
     vms[_reqId] = vm;
     /*
-    //ÏÈ¼ì²éÖ®Ç°ÂòµÄ·þÎñÆ÷ÄÜ·ñ·ÅÏÂ
+    //ï¿½È¼ï¿½ï¿½Ö®Ç°ï¿½ï¿½Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü·ï¿½ï¿½ï¿½ï¿½
     int success = -1;
     for (Server*& server : serversSorted) {
         if (server->addVM(vm)) {
@@ -253,7 +254,110 @@ void System::expansion(VM* vm) {
 }
 
 void System::migrate() {
-    output.push_back("(migration, 0)\n");
+    //output.push_back("(migration, 0)\n");
+    int total_vmsNum = vms.size();
+    if (total_vmsNum == 0) return;
+    int iter_steps = floor(total_vmsNum * 5 / 1000); 
+    int migration_num = 0;
+    int counter = 0;
+
+    while (migration_num < iter_steps) {
+        bool success = false;
+        for (auto LastServer = --serversSorted.end(); LastServer != serversSorted.begin() && !success; LastServer--) {
+            for (auto it = (*LastServer)->vmOnANode.begin(); it != (*LastServer)->vmOnANode.end() && !success; it++) {
+                for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer && !success; FirstServer++) {
+                    if ((*FirstServer)->canAdd(*it)) {
+                        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½Ð´ï¿½á²»ï¿½ï¿½ï¿½ï¿½ï¿½Ò°Ö¸ï¿½ï¿½
+                        Server* tmp_server = *LastServer;
+                        serversSorted.erase(LastServer);
+                        auto tmp_it = *it;
+                        //ï¿½ï¿½ï¿½ï¿½eraseï¿½ï¿½È¥ï¿½ï¿½Ô­itï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½
+                        tmp_server->delVM(*it);
+                        serversSorted.insert(tmp_server);
+                        tmp_server = *FirstServer;
+                        serversSorted.erase(FirstServer);
+                        tmp_server->addVM(tmp_it);
+                        serversSorted.insert(tmp_server);
+
+                        migration_num++;
+                        success = true;
+                        vector<int> _ = { (tmp_it)->server->id, (tmp_it)->node == 'A' ? 1 : 0 };
+                        migrateList_day.push_back(make_pair((tmp_it)->myID, _));
+
+                        if (success) break;
+                        //ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½â¸³Öµï¿½ï¿½Ã»Ê²Ã´ï¿½ï¿½,ï¿½ï¿½ï¿½âµ±ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½++ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+                        //FirstServer = LastServer = serversSorted.begin();
+                        //it = (*LastServer)->vmOnANode.begin();
+                    }
+                }
+                counter++;
+                if (success || counter > 3*iter_steps) break;
+
+            }
+
+            if (success || counter > 3*iter_steps) break;
+
+            for (auto it = (*LastServer)->vmOnBNode.begin(); it != (*LastServer)->vmOnBNode.end() && !success; it++) {
+                for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer && !success; FirstServer++) {
+                    if ((*FirstServer)->canAdd(*it)) {
+                        Server* tmp_server = *LastServer;
+                        serversSorted.erase(LastServer);
+                        auto tmp_it = *it;
+                        tmp_server->delVM(*it);
+                        serversSorted.insert(tmp_server);
+                        tmp_server = *FirstServer;
+                        serversSorted.erase(FirstServer);
+                        tmp_server->addVM(tmp_it);
+                        serversSorted.insert(tmp_server);
+
+                        migration_num++;
+                        success = true;
+                        vector<int> _ = { (tmp_it)->server->id, (tmp_it)->node == 'A' ? 1 : 0 };
+                        migrateList_day.push_back(make_pair((tmp_it)->myID, _));
+                        
+                        if (success) break;
+                        //FirstServer = LastServer = serversSorted.begin();
+                        //it = (*LastServer)->vmOnBNode.begin();
+                    }
+                }
+                counter++;
+                if (success || counter > 3*iter_steps) break;
+            }
+
+            if (success || counter > 3*iter_steps) break;
+
+            for (auto it = (*LastServer)->vmOnTwoNodes.begin(); it != (*LastServer)->vmOnTwoNodes.end() && !success; it++) {
+                for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer && !success; FirstServer++) {
+                    if ((*FirstServer)->canAdd(*it)) {
+                        Server* tmp_server = *LastServer;
+                        serversSorted.erase(LastServer);
+                        auto tmp_it = *it;
+                        tmp_server->delVM(*it);
+                        serversSorted.insert(tmp_server);
+                        tmp_server = *FirstServer;
+                        serversSorted.erase(FirstServer);
+                        tmp_server->addVM(tmp_it);
+                        serversSorted.insert(tmp_server);
+
+                        migration_num++;
+                        success = true;
+                        vector<int> _ = { (tmp_it)->server->id };
+                        migrateList_day.push_back(make_pair((tmp_it)->myID, _));
+
+                        if (success) break;
+                        //FirstServer = LastServer = serversSorted.begin();
+                        //it = (*LastServer)->vmOnTwoNodes.begin();
+                    }
+                }
+                counter++;
+                if (success || counter > 3*iter_steps) break;
+            }
+        
+            if (success || counter > 3*iter_steps) break;
+        }
+        //ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ð¿ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½
+        if (!success) break;
+    }  
 }
 
 void System::serverPower() {
@@ -279,7 +383,21 @@ void System::shuchu() {
         }
     }
 
-    migrate();
+    //migrate();
+    int migration_num = migrateList_day.size();
+    total_migration_num += migration_num;
+    output.push_back("(migration, " + to_string(migration_num) + ")\n");
+    for (auto& item : migrateList_day) {
+        if (item.second.size() == 1) {
+            //Ë«ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¨ï¿½ï¿½
+            output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ")\n");
+        }
+        else {
+            //ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¨ï¿½ï¿½
+            string tmp_node = item.second[1] == 1 ? "A" : "B";
+            output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ", " + tmp_node + ")\n");
+        }
+    }
 
     for (const string& vmID : addList_day) {
         VM* vm = vms[vmID];
@@ -290,6 +408,7 @@ void System::shuchu() {
     }
 
     purchase_day.clear();
+    migrateList_day.clear();
     addList_day.clear();
     //vector<vector<int>>().swap(vmOnServer_day);
 }

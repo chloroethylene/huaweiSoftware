@@ -51,6 +51,8 @@ public:
     Server* server;
     //记录放置在哪个节点
     char node;
+    //加入虚拟机ID,
+    string myID;
 
     VM(const string& vmType);
 };
@@ -79,6 +81,9 @@ class System {
 public:
     //当天添加的虚拟机的ID
     vector<string> addList_day;
+    //迁移记录及迁移总数
+    vector<pair<string, vector<int>>> migrateList_day;
+    int total_migration_num = 0;
     long long serverCost, powerCost;
     vector<string> output;
 public:

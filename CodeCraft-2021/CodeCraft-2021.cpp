@@ -13,20 +13,20 @@ using namespace std;
 
 //#define TEST
 
-// ·şÎñÆ÷ĞÅÏ¢
+// æœåŠ¡å™¨ä¿¡æ¯
 ServerList serverList;
-// ĞéÄâ»úĞÅÏ¢
+// è™šæ‹Ÿæœºä¿¡æ¯
 VMList vmList;
-// ÇëÇóĞÅÏ¢
+// è¯·æ±‚ä¿¡æ¯
 ReqList reqList;
-//¶¨Òå·şÎñÆ÷-ĞéÄâ»úÏµÍ³
+//å®šä¹‰æœåŠ¡å™¨-è™šæ‹Ÿæœºç³»ç»Ÿ
 System serversInfo;
 
 #ifdef TEST
-const string filePath = "E:/cs/2021huaweitiaozhan/training-2.txt";
+const string filePath = "E:/HW_RT/train_data/training-2.txt";
 #endif
 
-// ·ÖÅä²ßÂÔ
+// åˆ†é…ç­–ç•¥
 void match(int day) {
     for (int i = 0; i < reqList[day].size(); i++) {
         if (reqList[day][i].size() == 3) {
@@ -54,8 +54,9 @@ int main() {
     reqList.read();
     reqList.create_opInfos();
 
-    // ¿ªÊ¼´¦ÀíÇëÇó
+    // å¼€å§‹å¤„ç†è¯·æ±‚
     for (int day = 0; day < reqList.size(); ++day) {
+        serversInfo.migrate();
         match(day);
         serversInfo.shuchu();
         serversInfo.serverPower();
