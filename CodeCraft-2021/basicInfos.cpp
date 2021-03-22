@@ -211,7 +211,7 @@ void ReqList::read() {
     scanf("%d", &requestdays);
     string op, reqVmType, reqId;
 
-    // ¿ªÊ¼´¦ÀíÇëÇó
+    // å¼€å§‹å¤„ç†è¯·æ±‚
     for (int day = 0; day < requestdays; ++day) {
         scanf("%d", &dayRequestNumber);
         requestInfos.emplace_back();

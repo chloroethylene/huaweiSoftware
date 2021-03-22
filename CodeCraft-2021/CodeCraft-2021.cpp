@@ -1,4 +1,4 @@
-//#pragma warning(disable:4996)
+#pragma warning(disable:4996)
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -11,7 +11,7 @@
 #include "solution.h"
 using namespace std;
 
-//#define TEST
+#define TEST
 
 // 服务器信息
 ServerList serverList;
@@ -23,7 +23,7 @@ ReqList reqList;
 System serversInfo;
 
 #ifdef TEST
-const string filePath = "E:/HW_RT/train_data/training-2.txt";
+const string filePath = "../../training-data/training-2.txt";
 #endif
 
 // 分配策略

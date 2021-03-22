@@ -16,7 +16,7 @@ class System;
 
 class Server {
 public:
-    //»ù±¾ĞÅÏ¢
+    //åŸºæœ¬ä¿¡æ¯
     string serverType;
     int cpuCoresA;
     int cpuCoresB;
@@ -24,34 +24,34 @@ public:
     int memorySizeB;
     int purchaseCost;
     int oneDayPowerCost;
-    //¼ÇÂ¼ËùÓĞ·ÅÖÃÔÚ¸Ã·şÎñÆ÷ÉÏµÄĞéÄâ»ú
+    //è®°å½•æ‰€æœ‰æ”¾ç½®åœ¨è¯¥æœåŠ¡å™¨ä¸Šçš„è™šæ‹Ÿæœº
     unordered_set<VM*> vmOnANode;
     unordered_set<VM*> vmOnBNode;
     unordered_set<VM*> vmOnTwoNodes;
-    //¼ÇÂ¼±¾ÉíµÄID·½±ã´ÓĞéÄâ»ú¿ÉÒÔ²éÕÒµ½·şÎñÆ÷ID
+    //è®°å½•æœ¬èº«çš„IDæ–¹ä¾¿ä»è™šæ‹Ÿæœºå¯ä»¥æŸ¥æ‰¾åˆ°æœåŠ¡å™¨ID
     int id;
 
     Server(const string& serverType);
     bool canAdd(VM* vm)const;
     bool addVM(VM* vm);
     void delVM(VM* vm);
-    //ÀûÓÃkeyÀ´¶Ôserver½øĞĞÅÅĞò
+    //åˆ©ç”¨keyæ¥å¯¹serverè¿›è¡Œæ’åº
     double key()const;
     int numOfVM()const;
 };
 
 class VM {
 public:
-    //»ù±¾ĞÅÏ¢
+    //åŸºæœ¬ä¿¡æ¯
     string vmType;
     int cpuCores;
     int memorySize;
     bool doubleNodes;
-    //¼ÇÂ¼¸ÃĞéÄâ»ú·ÅÖÃµÄ·şÎñÆ÷
+    //è®°å½•è¯¥è™šæ‹Ÿæœºæ”¾ç½®çš„æœåŠ¡å™¨
     Server* server;
-    //¼ÇÂ¼·ÅÖÃÔÚÄÄ¸ö½Úµã
+    //è®°å½•æ”¾ç½®åœ¨å“ªä¸ªèŠ‚ç‚¹
     char node;
-    //¼ÓÈëĞéÄâ»úID,
+    //åŠ å…¥è™šæ‹ŸæœºID,
     string myID;
 
     VM(const string& vmType);
@@ -64,39 +64,39 @@ public:
     }
 };
 
-//´æ´¢´ËÊ±ÓµÓĞµÄËùÓĞ·şÎñÆ÷ĞÅÏ¢
+//å­˜å‚¨æ­¤æ—¶æ‹¥æœ‰çš„æ‰€æœ‰æœåŠ¡å™¨ä¿¡æ¯
 class System {
-    //Ìí¼ÓĞéÄâ»úÊ±µÄ·şÎñÆ÷¼ì²éË³Ğò£¬°üÀ¨Ö®Ç°µÄºÍµ±ÌìµÄËùÓĞ·şÎñÆ÷
+    //æ·»åŠ è™šæ‹Ÿæœºæ—¶çš„æœåŠ¡å™¨æ£€æŸ¥é¡ºåºï¼ŒåŒ…æ‹¬ä¹‹å‰çš„å’Œå½“å¤©çš„æ‰€æœ‰æœåŠ¡å™¨
     multiset<Server*, cmpServer> serversSorted;
-    //µ±ÌìÖ®Ç°µÄ·şÎñÆ÷ID=>·şÎñÆ÷
+    //å½“å¤©ä¹‹å‰çš„æœåŠ¡å™¨ID=>æœåŠ¡å™¨
     vector<Server*> servers;
-    //ĞéÄâ»úµÄID=>ĞéÄâ»ú
+    //è™šæ‹Ÿæœºçš„ID=>è™šæ‹Ÿæœº
     unordered_map<string, VM*> vms;
-    //µ±Ìì¹ºÂòµÄ·şÎñÆ÷
+    //å½“å¤©è´­ä¹°çš„æœåŠ¡å™¨
     unordered_map<string, vector<Server*>>purchase_day;
-    //²éÕÒÊ×´ÎÊÊÓ¦µÄ·şÎñÆ÷£¬²¢½«Æä´ÓºìºÚÊ÷ÖĞÉ¾³ı
+    //æŸ¥æ‰¾é¦–æ¬¡é€‚åº”çš„æœåŠ¡å™¨ï¼Œå¹¶å°†å…¶ä»çº¢é»‘æ ‘ä¸­åˆ é™¤
     bool firstFit(VM* vm);
-    //¶ÔÄ³¸ö·şÎñÆ÷¸üĞÂºìºÚÊ÷
+    //å¯¹æŸä¸ªæœåŠ¡å™¨æ›´æ–°çº¢é»‘æ ‘
     void removeServer(Server* server);
 public:
-    //µ±ÌìÌí¼ÓµÄĞéÄâ»úµÄID
+    //å½“å¤©æ·»åŠ çš„è™šæ‹Ÿæœºçš„ID
     vector<string> addList_day;
-    //Ç¨ÒÆ¼ÇÂ¼¼°Ç¨ÒÆ×ÜÊı
+    //è¿ç§»è®°å½•åŠè¿ç§»æ€»æ•°
     vector<pair<string, vector<int>>> migrateList_day;
     int total_migration_num = 0;
     long long serverCost, powerCost;
     vector<string> output;
 public:
-    //¹¹Ôìº¯Êı
+    //æ„é€ å‡½æ•°
     System();
     
-    // ´¦Àí´´½¨ĞéÄâ»ú²Ù×÷
+    // å¤„ç†åˆ›å»ºè™šæ‹Ÿæœºæ“ä½œ
     void addVM(vector<string>& createVmInfo);
-    // ´¦ÀíÉ¾³ıĞéÄâ»ú²Ù×÷
+    // å¤„ç†åˆ é™¤è™šæ‹Ÿæœºæ“ä½œ
     void delVM(vector<string>& delVmInfo);
-    // À©Èİ·şÎñÆ÷²ßÂÔ
+    // æ‰©å®¹æœåŠ¡å™¨ç­–ç•¥
     void expansion(VM* vm);
-    // Ç¨ÒÆĞéÄâ»ú²ßÂÔ
+    // è¿ç§»è™šæ‹Ÿæœºç­–ç•¥
     void migrate();
     void serverPower();
     long long totalCost()const;

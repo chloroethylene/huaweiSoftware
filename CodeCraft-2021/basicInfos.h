@@ -11,7 +11,7 @@ class VMList;
 class ReqList;
 class VM;
 
-//´æ´¢±¸Ñ¡·şÎñÆ÷ÁĞ±í
+//å­˜å‚¨å¤‡é€‰æœåŠ¡å™¨åˆ—è¡¨
 class ServerList {
     unordered_map<string, vector<int>> serverInfos;
     vector<pair<string, vector<int>>> servernum_str;
@@ -24,7 +24,7 @@ public:
     string wise_choose(VM* vm) const;
 };
 
-//´æ´¢±¸Ñ¡ĞéÄâ»úÁĞ±í
+//å­˜å‚¨å¤‡é€‰è™šæ‹Ÿæœºåˆ—è¡¨
 class VMList {
 public:
     unordered_map<string, vector<int>> vmInfos;
@@ -33,15 +33,15 @@ public:
     void read();
 };
 
-//´æ´¢ÓÃ»§µÄÇëÇóÁĞ±í
+//å­˜å‚¨ç”¨æˆ·çš„è¯·æ±‚åˆ—è¡¨
 class ReqList {
-    // ½âÎöÓÃ»§Ìí¼ÓÇëÇó
+    // è§£æç”¨æˆ·æ·»åŠ è¯·æ±‚
     void generateRequest(string& op, string& reqVmType, string& reqId, int day);
-    // ½âÎöÓÃ»§É¾³ıÇëÇó
+    // è§£æç”¨æˆ·åˆ é™¤è¯·æ±‚
     void generateRequest(string& op, string& reqId, int day);
 public:
     unordered_map<string, vector<int>> vm_ttl;
-    //[µÚ¼¸Ìì][µÚ¼¸Ìõ]=>vector<string>
+    //[ç¬¬å‡ å¤©][ç¬¬å‡ æ¡]=>vector<string>
     vector<vector<vector<string>>> requestInfos;
     vector<vector<vector<string>>> operateInfos;
     vector<vector<vector<string>>>::iterator begin();
