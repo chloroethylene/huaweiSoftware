@@ -1,6 +1,7 @@
 //#pragma warning(disable:4996)
 #include <string>
 #include <vector>
+#include <set>
 #include <cassert>
 #include <iterator>
 #include <cstdlib>
@@ -252,6 +253,7 @@ void System::expansion(VM* vm) {
     
 }
 
+/*
 void System::migrate() {
     //迁移思路考虑将有序服务器sortedServer中排序靠后的Server中虚拟机尽可能往前拿，
     //尽可能保证FFD的盒子资源排列状态，以配合放置策略。
@@ -262,7 +264,7 @@ void System::migrate() {
     int iter_steps = floor(total_vmsNum * 5 / 1000); 
     int migration_num = 0;
     int counter = 0;
-    float lambda = 4;
+    float lambda = 0.5;
 
     while (migration_num < iter_steps) {
         bool success = false;
@@ -359,6 +361,104 @@ void System::migrate() {
         //目前实际是由counter与lambda*iter_steps的最大搜索数做判断条件，无法在合法时间内做完全搜索。
         if (!success) break;
     }  
+}*/
+
+void System::migrate() {
+    int total_vmsNum = vms.size();
+    if (total_vmsNum == 0) return;
+    int iter_steps = floor(total_vmsNum * 5 / 1000);
+    if (iter_steps == 0) return;
+    int migration_num = 0;
+    int counter = 0;
+    float lambda = 1.0;
+    //vector<int> rec_ServerID;
+    set<int> rec_ServerID;
+    bool success = false;
+    for (auto LastServer = --serversSorted.end(); LastServer != serversSorted.begin(); LastServer--) {
+        //if (find(rec_ServerID.begin(), rec_ServerID.end(), (*LastServer)->id) != rec_ServerID.end())
+        //    continue;
+        if (rec_ServerID.find((*LastServer)->id) != rec_ServerID.end())
+        else
+            rec_ServerID.insert((*LastServer)->id);
+
+        vector<VM*> vmOnA((*LastServer)->vmOnANode.begin(), (*LastServer)->vmOnANode.end());
+        vector<VM*> vmOnB((*LastServer)->vmOnBNode.begin(), (*LastServer)->vmOnBNode.end());
+        vector<VM*> VM_CurServer_Single;
+        VM_CurServer_Single.insert(VM_CurServer_Single.end(), vmOnA.begin(), vmOnA.end());
+        VM_CurServer_Single.insert(VM_CurServer_Single.end(), vmOnB.begin(), vmOnB.end());
+        vector<VM*> VM_CurServer_Double((*LastServer)->vmOnTwoNodes.begin(), (*LastServer)->vmOnTwoNodes.end());
+
+        auto cmp = [](const VM* a, const VM* b)->bool {
+            int a_size = a->cpuCores + a->memorySize;
+            int b_size = b->cpuCores + b->memorySize;
+            return a_size < b_size;
+        };
+
+        sort(VM_CurServer_Single.begin(), VM_CurServer_Single.end(), cmp);
+        sort(VM_CurServer_Double.begin(), VM_CurServer_Double.end(), cmp);
+		
+        for (auto it = VM_CurServer_Single.begin(); it != VM_CurServer_Single.end(); ) {
+            success = false;
+            for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer; FirstServer++) {
+                if ((*FirstServer)->canAdd(*it)) {
+                    Server* tmp_server = *LastServer;
+                    serversSorted.erase(LastServer);
+                    auto tmp_it = *it;
+                    it = VM_CurServer_Single.erase(it);
+                    tmp_server->delVM(tmp_it);
+                    LastServer = serversSorted.insert(tmp_server);
+                    tmp_server = *FirstServer;
+                    serversSorted.erase(FirstServer);
+                    tmp_server->addVM(tmp_it);
+                    serversSorted.insert(tmp_server);
+
+                    migration_num++;
+                    success = true;
+                    vector<int> _ = { (tmp_it)->server->id, (tmp_it)->node == 'A' ? 1 : 0 };
+                    migrateList_day.push_back(make_pair((tmp_it)->myID, _));
+
+                    if (success) break;
+                }
+
+            }
+            counter++;
+            if (!success || counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
+
+            //if (counter > floor(lambda * iter_steps)) break;
+        }
+
+        if (counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
+
+        for (auto it = VM_CurServer_Double.begin(); it != VM_CurServer_Double.end(); ) {
+            success = false;
+            for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer; FirstServer++) {
+                if ((*FirstServer)->canAdd(*it)) {
+                    Server* tmp_server = *LastServer;
+                    serversSorted.erase(LastServer);
+                    auto tmp_it = *it;
+                    it = VM_CurServer_Double.erase(it);
+                    tmp_server->delVM(tmp_it);
+                    LastServer = serversSorted.insert(tmp_server);
+                    tmp_server = *FirstServer;
+                    serversSorted.erase(FirstServer);
+                    tmp_server->addVM(tmp_it);
+                    serversSorted.insert(tmp_server);
+
+                    migration_num++;
+                    success = true;
+                    vector<int> _ = { (tmp_it)->server->id };
+                    migrateList_day.push_back(make_pair((tmp_it)->myID, _));
+
+                    if (success) break;
+                }
+            }
+            counter++;
+            if (!success || counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
+        }
+
+        if (counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
+    }
+    rec_ServerID.clear();
 }
 
 void System::serverPower() {
@@ -390,11 +490,9 @@ void System::shuchu() {
     output.push_back("(migration, " + to_string(migration_num) + ")\n");
     for (auto& item : migrateList_day) {
         if (item.second.size() == 1) {
-            //˫�ڵ��������Ǩ��
             output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ")\n");
         }
         else {
-            //���ڵ��������Ǩ��
             string tmp_node = item.second[1] == 1 ? "A" : "B";
             output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ", " + tmp_node + ")\n");
         }
