@@ -253,134 +253,31 @@ void System::expansion(VM* vm) {
     
 }
 
-/*
-void System::migrate() {
-    //迁移思路考虑将有序服务器sortedServer中排序靠后的Server中虚拟机尽可能往前拿，
-    //尽可能保证FFD的盒子资源排列状态，以配合放置策略。
-    //从目前结果看，增大每次可搜索的最大虚拟机个数(lambda*iter_steps)对最终cost降低有效，
-    //但受制于计算时间，目前仅可取max lambda = 4.8。
-    int total_vmsNum = vms.size();
-    if (total_vmsNum == 0) return;
-    int iter_steps = floor(total_vmsNum * 5 / 1000); 
-    int migration_num = 0;
-    int counter = 0;
-    float lambda = 0.5;
 
-    while (migration_num < iter_steps) {
-        bool success = false;
-        //从sortedServer中取靠后的服务器，进而取其上虚拟机。目前按照A、B、双节点的顺序取虚拟机。
-        for (auto LastServer = --serversSorted.end(); LastServer != serversSorted.begin() && !success; LastServer--) {
-            //取A节点上虚拟机。
-            for (auto it = (*LastServer)->vmOnANode.begin(); it != (*LastServer)->vmOnANode.end() && !success; it++) {
-                //从头开始逐个尝试能否放置。
-                for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer && !success; FirstServer++) {
-                    if ((*FirstServer)->canAdd(*it)) {
-                        //这里取了临时转存的方式，直接写会不会产生野指针？
-                        Server* tmp_server = *LastServer;
-                        serversSorted.erase(LastServer);
-                        auto tmp_it = *it;
-                        //这里erase似乎会影响it本身指向的虚拟机，引入临时存储。
-                        tmp_server->delVM(*it);
-                        serversSorted.insert(tmp_server);
-                        tmp_server = *FirstServer;
-                        serversSorted.erase(FirstServer);
-                        tmp_server->addVM(tmp_it);
-                        serversSorted.insert(tmp_server);
-
-                        migration_num++;
-                        success = true;
-                        vector<int> _ = { (tmp_it)->server->id, (tmp_it)->node == 'A' ? 1 : 0 };
-                        migrateList_day.push_back(make_pair((tmp_it)->myID, _));
-
-                        if (success) break;
-                    }
-                }
-                counter++;
-                if (success || counter > floor(lambda*iter_steps)) break;
-
-            }
-
-            if (success || counter > floor(lambda*iter_steps)) break;
-
-            for (auto it = (*LastServer)->vmOnBNode.begin(); it != (*LastServer)->vmOnBNode.end() && !success; it++) {
-                for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer && !success; FirstServer++) {
-                    if ((*FirstServer)->canAdd(*it)) {
-                        Server* tmp_server = *LastServer;
-                        serversSorted.erase(LastServer);
-                        auto tmp_it = *it;
-                        tmp_server->delVM(*it);
-                        serversSorted.insert(tmp_server);
-                        tmp_server = *FirstServer;
-                        serversSorted.erase(FirstServer);
-                        tmp_server->addVM(tmp_it);
-                        serversSorted.insert(tmp_server);
-
-                        migration_num++;
-                        success = true;
-                        vector<int> _ = { (tmp_it)->server->id, (tmp_it)->node == 'A' ? 1 : 0 };
-                        migrateList_day.push_back(make_pair((tmp_it)->myID, _));
-                        
-                        if (success) break;
-                    }
-                }
-                counter++;
-                if (success || counter > floor(lambda*iter_steps)) break;
-            }
-
-            if (success || counter > floor(lambda*iter_steps)) break;
-
-            for (auto it = (*LastServer)->vmOnTwoNodes.begin(); it != (*LastServer)->vmOnTwoNodes.end() && !success; it++) {
-                for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer && !success; FirstServer++) {
-                    if ((*FirstServer)->canAdd(*it)) {
-                        Server* tmp_server = *LastServer;
-                        serversSorted.erase(LastServer);
-                        auto tmp_it = *it;
-                        tmp_server->delVM(*it);
-                        serversSorted.insert(tmp_server);
-                        tmp_server = *FirstServer;
-                        serversSorted.erase(FirstServer);
-                        tmp_server->addVM(tmp_it);
-                        serversSorted.insert(tmp_server);
-
-                        migration_num++;
-                        success = true;
-                        vector<int> _ = { (tmp_it)->server->id };
-                        migrateList_day.push_back(make_pair((tmp_it)->myID, _));
-
-                        if (success) break;
-                        
-                    }
-                }
-                counter++;
-                if (success || counter > floor(lambda*iter_steps)) break;
-            }
-        
-            if (success || counter > floor(lambda*iter_steps)) break;
-        }
-        //如果遍历完当前所有在线虚拟机仍无可迁移，则跳出。
-        //目前实际是由counter与lambda*iter_steps的最大搜索数做判断条件，无法在合法时间内做完全搜索。
-        if (!success) break;
-    }  
-}*/
 
 void System::migrate() {
+    
     int total_vmsNum = vms.size();
     if (total_vmsNum == 0) return;
     int iter_steps = floor(total_vmsNum * 5 / 1000);
     if (iter_steps == 0) return;
     int migration_num = 0;
     int counter = 0;
-    float lambda = 1.0;
+    float lambda = 1.4;
+    //记录已搜索过的服务器ID，避免重复�?
     //vector<int> rec_ServerID;
     set<int> rec_ServerID;
     bool success = false;
+    //从sortedServer中取靠后的服务器，进而取其上虚拟机。目前按照A、B、双节点的顺序取虚拟机�?
     for (auto LastServer = --serversSorted.end(); LastServer != serversSorted.begin(); LastServer--) {
         //if (find(rec_ServerID.begin(), rec_ServerID.end(), (*LastServer)->id) != rec_ServerID.end())
-        //    continue;
+        //    continue;//已搜�?,跳过对当前服务器的搜紀�?
         if (rec_ServerID.find((*LastServer)->id) != rec_ServerID.end())
+            continue;//已搜�?,跳过对当前服务器的搜紀�?
         else
             rec_ServerID.insert((*LastServer)->id);
 
+        //取当前服务器上所有虚拟机，按照单双节点分别排�?
         vector<VM*> vmOnA((*LastServer)->vmOnANode.begin(), (*LastServer)->vmOnANode.end());
         vector<VM*> vmOnB((*LastServer)->vmOnBNode.begin(), (*LastServer)->vmOnBNode.end());
         vector<VM*> VM_CurServer_Single;
@@ -389,6 +286,7 @@ void System::migrate() {
         vector<VM*> VM_CurServer_Double((*LastServer)->vmOnTwoNodes.begin(), (*LastServer)->vmOnTwoNodes.end());
 
         auto cmp = [](const VM* a, const VM* b)->bool {
+            //匹配放置思路，取一范数
             int a_size = a->cpuCores + a->memorySize;
             int b_size = b->cpuCores + b->memorySize;
             return a_size < b_size;
@@ -396,15 +294,18 @@ void System::migrate() {
 
         sort(VM_CurServer_Single.begin(), VM_CurServer_Single.end(), cmp);
         sort(VM_CurServer_Double.begin(), VM_CurServer_Double.end(), cmp);
-		
+
+        //对单节点部署的服务器从小到大做迁�?
         for (auto it = VM_CurServer_Single.begin(); it != VM_CurServer_Single.end(); ) {
             success = false;
             for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer; FirstServer++) {
                 if ((*FirstServer)->canAdd(*it)) {
+                    //这里取了临时转存的方式，直接写会不会产生野指针？
                     Server* tmp_server = *LastServer;
                     serversSorted.erase(LastServer);
                     auto tmp_it = *it;
-                    it = VM_CurServer_Single.erase(it);
+                    //这里erase似乎会影响it本身指向的虚拟机，引入临时存储�?
+                    it = VM_CurServer_Single.erase(it);//这里erase以后it会自动指向下一个元�?
                     tmp_server->delVM(tmp_it);
                     LastServer = serversSorted.insert(tmp_server);
                     tmp_server = *FirstServer;
@@ -422,6 +323,9 @@ void System::migrate() {
 
             }
             counter++;
+            //此时对单节点列表中的一个虚拟机完成了从头到尾的验证搜索�?
+            //由于这里已用排序，故此小的放不下就跳出�?
+            //但这里一范数其实并不确切，可以考虑加入一定阈值�?
             if (!success || counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
 
             //if (counter > floor(lambda * iter_steps)) break;
@@ -429,13 +333,17 @@ void System::migrate() {
 
         if (counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
 
+        
+        
         for (auto it = VM_CurServer_Double.begin(); it != VM_CurServer_Double.end(); ) {
             success = false;
             for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer; FirstServer++) {
                 if ((*FirstServer)->canAdd(*it)) {
+                    //这里取了临时转存的方式，直接写会不会产生野指针？
                     Server* tmp_server = *LastServer;
                     serversSorted.erase(LastServer);
                     auto tmp_it = *it;
+                    //这里erase似乎会影响it本身指向的虚拟机，引入临时存储�?
                     it = VM_CurServer_Double.erase(it);
                     tmp_server->delVM(tmp_it);
                     LastServer = serversSorted.insert(tmp_server);
@@ -459,6 +367,10 @@ void System::migrate() {
         if (counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
     }
     rec_ServerID.clear();
+    
+    //如果遍历完当前所有在线虚拟机仍无可迁移，则跳出�?
+    //目前实际是由counter与lambda*iter_steps的最大搜索数做判断条件，无法在合法时间内做完全搜紀�?
+
 }
 
 void System::serverPower() {
@@ -490,9 +402,11 @@ void System::shuchu() {
     output.push_back("(migration, " + to_string(migration_num) + ")\n");
     for (auto& item : migrateList_day) {
         if (item.second.size() == 1) {
+            //??????????????
             output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ")\n");
         }
         else {
+            //???????????????
             string tmp_node = item.second[1] == 1 ? "A" : "B";
             output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ", " + tmp_node + ")\n");
         }

@@ -1,4 +1,4 @@
-//#pragma warning(disable:4996)
+﻿//#pragma warning(disable:4996)
 #include <string>
 #include <vector>
 #include <cassert>
@@ -151,7 +151,7 @@ void ReqList::generateRequest(string& op, string& reqVmType, string& reqId, int 
     _reqVmType = reqVmType.substr(0, reqVmType.size() - 1);
     _reqId = reqId.substr(0, reqId.size() - 1);
     requestInfos[day].push_back(vector<string>{_op, _reqVmType, _reqId});
-    vm_ttl[_reqId].push_back(day);
+    //vm_ttl[_reqId].push_back(day);
 }
 
 void ReqList::generateRequest(string& op, string& reqId, int day) {
@@ -159,7 +159,7 @@ void ReqList::generateRequest(string& op, string& reqId, int day) {
     _reqId = reqId.substr(0, reqId.size() - 1);
     _op = op.substr(1, op.size() - 1);
     requestInfos[day].push_back(vector<string>{_op, _reqId});
-    vm_ttl[_reqId].push_back(day);
+    //vm_ttl[_reqId].push_back(day);
 }
 
 
@@ -217,11 +217,11 @@ void ReqList::read() {
             }
         }
     }
-    for (auto& item : vm_ttl) {
+    /*for (auto& item : vm_ttl) {
         if (item.second.size() == 1) {
             item.second.push_back(requestdays-1);
         }
-    }
+    }*/
 }
 
 vector<vector<vector<string>>>::size_type ReqList::size() {
