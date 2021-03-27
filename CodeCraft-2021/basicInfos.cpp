@@ -1,4 +1,4 @@
-﻿//#pragma warning(disable:4996)
+//#pragma warning(disable:4996)
 #include <string>
 #include <vector>
 #include <cassert>
@@ -151,7 +151,7 @@ void ReqList::generateRequest(string& op, string& reqVmType, string& reqId, int 
     _reqVmType = reqVmType.substr(0, reqVmType.size() - 1);
     _reqId = reqId.substr(0, reqId.size() - 1);
     requestInfos[day].push_back(vector<string>{_op, _reqVmType, _reqId});
-    //vm_ttl[_reqId].push_back(day);
+    vm_ttl[_reqId].push_back(day);
 }
 
 void ReqList::generateRequest(string& op, string& reqId, int day) {
@@ -159,23 +159,23 @@ void ReqList::generateRequest(string& op, string& reqId, int day) {
     _reqId = reqId.substr(0, reqId.size() - 1);
     _op = op.substr(1, op.size() - 1);
     requestInfos[day].push_back(vector<string>{_op, _reqId});
-    //vm_ttl[_reqId].push_back(day);
+    vm_ttl[_reqId].push_back(day);
 }
 
 
 void ReqList::create_opInfos() {
     auto cmp1 = [this](vector<string>& a, vector<string>& b)->bool {
-        //int a_ttl = vm_ttl[a[2]][1]- vm_ttl[a[2]][0];
+        int a_ttl = vm_ttl[a[2]][1]- vm_ttl[a[2]][0];
         int a_cpu = vmList.vmInfos[a[1]][0];
         int a_mem = vmList.vmInfos[a[1]][1];
         double a_per = double(a_cpu + a_mem);//double(sqrt(a_cpu * a_cpu + a_mem * a_mem));
 
-        //int b_ttl = vm_ttl[b[2]][1]- vm_ttl[b[2]][0];
+        int b_ttl = vm_ttl[b[2]][1]- vm_ttl[b[2]][0];
         int b_cpu = vmList.vmInfos[b[1]][0];
         int b_mem = vmList.vmInfos[b[1]][1];
         double b_per = double(b_cpu + b_mem);//double(sqrt(b_cpu * b_cpu + b_mem * b_mem));
 
-        return a_per > b_per;//a_ttl > b_ttl;
+        return (a_per > b_per)||(a_per == b_per && a_ttl > b_ttl); // a_per > b_per;
     };
 
     this->operateInfos = this->requestInfos;
@@ -217,11 +217,11 @@ void ReqList::read() {
             }
         }
     }
-    /*for (auto& item : vm_ttl) {
+    for (auto& item : vm_ttl) {
         if (item.second.size() == 1) {
             item.second.push_back(requestdays-1);
         }
-    }*/
+    }
 }
 
 vector<vector<vector<string>>>::size_type ReqList::size() {

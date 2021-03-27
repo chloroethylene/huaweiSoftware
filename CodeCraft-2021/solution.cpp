@@ -1,7 +1,7 @@
 //#pragma warning(disable:4996)
 #include <string>
 #include <vector>
-#include <set>
+#include <unordered_set>
 #include <cassert>
 #include <iterator>
 #include <cstdlib>
@@ -13,7 +13,7 @@ using namespace std;
 
 extern ServerList serverList;
 extern VMList vmList;
-
+extern ReqList reqList;
 Server::Server(const string& serverType) {
     this->serverType = serverType;
     cpuCoresA = serverList[serverType][0];
@@ -50,6 +50,7 @@ bool Server::addVM(VM* vm) {
             memorySizeB -= needMemory;
             vm->server = this;
             vmOnTwoNodes.insert(vm);
+            vmOnServerSorted.insert(vm);
 
             return true;
         }
@@ -67,6 +68,7 @@ bool Server::addVM(VM* vm) {
         vm->server = this;
         vm->node = 'A';
         vmOnANode.insert(vm);
+        vmOnServerSorted.insert(vm);
 
         return true;
     }
@@ -76,6 +78,7 @@ bool Server::addVM(VM* vm) {
         vm->server = this;
         vm->node = 'B';
         vmOnBNode.insert(vm);
+        vmOnServerSorted.insert(vm);
 
         return true;
     }
@@ -85,6 +88,7 @@ bool Server::addVM(VM* vm) {
         vm->server = this;
         vm->node = 'B';
         vmOnBNode.insert(vm);
+        vmOnServerSorted.insert(vm);
 
         return true;
     }
@@ -94,6 +98,7 @@ bool Server::addVM(VM* vm) {
         vm->server = this;
         vm->node = 'A';
         vmOnANode.insert(vm);
+        vmOnServerSorted.insert(vm);
 
         return true;
     }
@@ -129,6 +134,7 @@ void Server::delVM(VM* vm) {
         memorySizeB += memory;
 
         vmOnTwoNodes.erase(vm);
+        vmOnServerSorted.erase(vm);
     }
     else {
         int cores = vm->cpuCores, memory = vm->memorySize;
@@ -137,12 +143,14 @@ void Server::delVM(VM* vm) {
             memorySizeA += memory;
 
             vmOnANode.erase(vm);
+            vmOnServerSorted.erase(vm);
         }
         else {
             cpuCoresB += cores;
             memorySizeB += memory;
 
             vmOnBNode.erase(vm);
+            vmOnServerSorted.erase(vm);
         }
     }
 }
@@ -253,124 +261,59 @@ void System::expansion(VM* vm) {
     
 }
 
-
-
 void System::migrate() {
-    
     int total_vmsNum = vms.size();
     if (total_vmsNum == 0) return;
-    int iter_steps = floor(total_vmsNum * 5 / 1000);
+    int iter_steps = total_vmsNum * 5 / 1000;
     if (iter_steps == 0) return;
     int migration_num = 0;
     int counter = 0;
-    float lambda = 1.4;
-    //记录已搜索过的服务器ID，避免重复�?
-    //vector<int> rec_ServerID;
-    set<int> rec_ServerID;
+    float lambda = 1.2;
+    unordered_set<VM*> vmsBeenChecked;
     bool success = false;
-    //从sortedServer中取靠后的服务器，进而取其上虚拟机。目前按照A、B、双节点的顺序取虚拟机�?
-    for (auto LastServer = --serversSorted.end(); LastServer != serversSorted.begin(); LastServer--) {
-        //if (find(rec_ServerID.begin(), rec_ServerID.end(), (*LastServer)->id) != rec_ServerID.end())
-        //    continue;//已搜�?,跳过对当前服务器的搜紀�?
-        if (rec_ServerID.find((*LastServer)->id) != rec_ServerID.end())
-            continue;//已搜�?,跳过对当前服务器的搜紀�?
-        else
-            rec_ServerID.insert((*LastServer)->id);
+    for (auto itrSourceServer = --serversSorted.end(); itrSourceServer != serversSorted.begin(); --itrSourceServer) {
+        for (auto itrVM = (*itrSourceServer)->vmOnServerSorted.begin(); itrVM != (*itrSourceServer)->vmOnServerSorted.end();) {
+            if (vmsBeenChecked.find(*itrVM) != vmsBeenChecked.end()) {
+                ++itrVM;
+                continue;
+            }
+            else vmsBeenChecked.insert(*itrVM);
 
-        //取当前服务器上所有虚拟机，按照单双节点分别排�?
-        vector<VM*> vmOnA((*LastServer)->vmOnANode.begin(), (*LastServer)->vmOnANode.end());
-        vector<VM*> vmOnB((*LastServer)->vmOnBNode.begin(), (*LastServer)->vmOnBNode.end());
-        vector<VM*> VM_CurServer_Single;
-        VM_CurServer_Single.insert(VM_CurServer_Single.end(), vmOnA.begin(), vmOnA.end());
-        VM_CurServer_Single.insert(VM_CurServer_Single.end(), vmOnB.begin(), vmOnB.end());
-        vector<VM*> VM_CurServer_Double((*LastServer)->vmOnTwoNodes.begin(), (*LastServer)->vmOnTwoNodes.end());
-
-        auto cmp = [](const VM* a, const VM* b)->bool {
-            //匹配放置思路，取一范数
-            int a_size = a->cpuCores + a->memorySize;
-            int b_size = b->cpuCores + b->memorySize;
-            return a_size < b_size;
-        };
-
-        sort(VM_CurServer_Single.begin(), VM_CurServer_Single.end(), cmp);
-        sort(VM_CurServer_Double.begin(), VM_CurServer_Double.end(), cmp);
-
-        //对单节点部署的服务器从小到大做迁�?
-        for (auto it = VM_CurServer_Single.begin(); it != VM_CurServer_Single.end(); ) {
             success = false;
-            for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer; FirstServer++) {
-                if ((*FirstServer)->canAdd(*it)) {
-                    //这里取了临时转存的方式，直接写会不会产生野指针？
-                    Server* tmp_server = *LastServer;
-                    serversSorted.erase(LastServer);
-                    auto tmp_it = *it;
-                    //这里erase似乎会影响it本身指向的虚拟机，引入临时存储�?
-                    it = VM_CurServer_Single.erase(it);//这里erase以后it会自动指向下一个元�?
-                    tmp_server->delVM(tmp_it);
-                    LastServer = serversSorted.insert(tmp_server);
-                    tmp_server = *FirstServer;
-                    serversSorted.erase(FirstServer);
-                    tmp_server->addVM(tmp_it);
-                    serversSorted.insert(tmp_server);
+            for (auto itrTargetServer = serversSorted.begin(); itrTargetServer != itrSourceServer; ++itrTargetServer) {
+                if ((*itrTargetServer)->canAdd(*itrVM)) {
+                    auto vmToBeMigration = *(itrVM++);
+
+                    Server* tmpServer = *itrSourceServer;
+                    serversSorted.erase(itrSourceServer);
+                    tmpServer->delVM(vmToBeMigration);
+                    itrSourceServer = serversSorted.insert(tmpServer);
+
+                    tmpServer = *itrTargetServer;
+                    serversSorted.erase(itrTargetServer);
+                    tmpServer->addVM(vmToBeMigration);
+                    serversSorted.insert(tmpServer);
 
                     migration_num++;
                     success = true;
-                    vector<int> _ = { (tmp_it)->server->id, (tmp_it)->node == 'A' ? 1 : 0 };
-                    migrateList_day.push_back(make_pair((tmp_it)->myID, _));
+                    vector<int> _;
+                    if ((vmToBeMigration)->doubleNodes)
+                        _ = { (vmToBeMigration)->server->id }; //双节点
+                    else
+                        _ = { (vmToBeMigration)->server->id, (vmToBeMigration)->node == 'A' ? 1 : 0 };//单节点
 
-                    if (success) break;
-                }
+                    migrateList_day.push_back(make_pair((vmToBeMigration)->myID, _));
 
-            }
-            counter++;
-            //此时对单节点列表中的一个虚拟机完成了从头到尾的验证搜索�?
-            //由于这里已用排序，故此小的放不下就跳出�?
-            //但这里一范数其实并不确切，可以考虑加入一定阈值�?
-            if (!success || counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
-
-            //if (counter > floor(lambda * iter_steps)) break;
-        }
-
-        if (counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
-
-        
-        
-        for (auto it = VM_CurServer_Double.begin(); it != VM_CurServer_Double.end(); ) {
-            success = false;
-            for (auto FirstServer = serversSorted.begin(); FirstServer != LastServer; FirstServer++) {
-                if ((*FirstServer)->canAdd(*it)) {
-                    //这里取了临时转存的方式，直接写会不会产生野指针？
-                    Server* tmp_server = *LastServer;
-                    serversSorted.erase(LastServer);
-                    auto tmp_it = *it;
-                    //这里erase似乎会影响it本身指向的虚拟机，引入临时存储�?
-                    it = VM_CurServer_Double.erase(it);
-                    tmp_server->delVM(tmp_it);
-                    LastServer = serversSorted.insert(tmp_server);
-                    tmp_server = *FirstServer;
-                    serversSorted.erase(FirstServer);
-                    tmp_server->addVM(tmp_it);
-                    serversSorted.insert(tmp_server);
-
-                    migration_num++;
-                    success = true;
-                    vector<int> _ = { (tmp_it)->server->id };
-                    migrateList_day.push_back(make_pair((tmp_it)->myID, _));
-
-                    if (success) break;
+                    break;
                 }
             }
             counter++;
+            //if (!success) ++itrVM;
             if (!success || counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
         }
 
         if (counter > floor(lambda * iter_steps) || migration_num >= iter_steps) break;
     }
-    rec_ServerID.clear();
-    
-    //如果遍历完当前所有在线虚拟机仍无可迁移，则跳出�?
-    //目前实际是由counter与lambda*iter_steps的最大搜索数做判断条件，无法在合法时间内做完全搜紀�?
-
 }
 
 void System::serverPower() {
@@ -400,18 +343,19 @@ void System::shuchu() {
     int migration_num = migrateList_day.size();
     total_migration_num += migration_num;
     output.push_back("(migration, " + to_string(migration_num) + ")\n");
-    for (auto& item : migrateList_day) {
-        if (item.second.size() == 1) {
-            //??????????????
-            output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ")\n");
-        }
-        else {
-            //???????????????
-            string tmp_node = item.second[1] == 1 ? "A" : "B";
-            output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ", " + tmp_node + ")\n");
+    if (migration_num != 0) {
+        for (auto& item : migrateList_day) {
+            if (item.second.size() == 1) {
+
+                output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ")\n");
+            }
+            else {
+                //???????????????
+                string tmp_node = (item.second[1] == 1 ? "A" : "B");
+                output.push_back("(" + item.first + ", " + to_string(item.second[0]) + ", " + tmp_node + ")\n");
+            }
         }
     }
-
     for (const string& vmID : addList_day) {
         VM* vm = vms[vmID];
         if (vm->doubleNodes)

@@ -10,35 +10,11 @@
 
 using namespace std;
 
-class Server;
+extern ReqList reqList;
+
 class VM;
+class Server;
 class System;
-
-class Server {
-public:
-    //基本信息
-    string serverType;
-    int cpuCoresA;
-    int cpuCoresB;
-    int memorySizeA;
-    int memorySizeB;
-    int purchaseCost;
-    int oneDayPowerCost;
-    //记录所有放置在该服务器上的虚拟机
-    unordered_set<VM*> vmOnANode;
-    unordered_set<VM*> vmOnBNode;
-    unordered_set<VM*> vmOnTwoNodes;
-    //记录本身的ID方便从虚拟机可以查找到服务器ID
-    int id;
-
-    Server(const string& serverType);
-    bool canAdd(VM* vm)const;
-    bool addVM(VM* vm);
-    void delVM(VM* vm);
-    //利用key来对server进行排序
-    double key()const;
-    int numOfVM()const;
-};
 
 class VM {
 public:
@@ -55,6 +31,45 @@ public:
     string myID;
 
     VM(const string& vmType);
+};
+
+class cmpVM {
+public:
+    bool operator()(const VM* a, const VM* b)const {
+        int a_size = a->cpuCores + a->memorySize;
+        int b_size = b->cpuCores + b->memorySize;
+        int a_ttl = reqList.vm_ttl[a->myID][1] - reqList.vm_ttl[a->myID][0];
+        int b_ttl = reqList.vm_ttl[b->myID][1] - reqList.vm_ttl[b->myID][0];
+        //return (a_size < b_size)||(a_size == b_size && a_ttl> b_ttl);
+        return (a_ttl > b_ttl) || (a_ttl == b_ttl && a_size < b_size) || (a_ttl == b_ttl && a_size == b_size && a < b);
+    }
+};
+
+class Server {
+public:
+    //基本信息
+    string serverType;
+    int cpuCoresA;
+    int cpuCoresB;
+    int memorySizeA;
+    int memorySizeB;
+    int purchaseCost;
+    int oneDayPowerCost;
+    //记录所有放置在该服务器上的虚拟机
+    unordered_set<VM*> vmOnANode;
+    unordered_set<VM*> vmOnBNode;
+    unordered_set<VM*> vmOnTwoNodes;
+    set<VM*, cmpVM> vmOnServerSorted;
+    //记录本身的ID方便从虚拟机可以查找到服务器ID
+    int id;
+
+    Server(const string& serverType);
+    bool canAdd(VM* vm)const;
+    bool addVM(VM* vm);
+    void delVM(VM* vm);
+    //利用key来对server进行排序
+    double key()const;
+    int numOfVM()const;
 };
 
 class cmpServer {

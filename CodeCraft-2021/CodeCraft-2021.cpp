@@ -23,7 +23,7 @@ ReqList reqList;
 System serversInfo;
 
 #ifdef TEST
-const string filePath = "E:/cs/2021huaweitiaozhan/training-2.txt";
+const string filePath = "../../training-data/training-2.txt";
 #endif
 
 // 分配策略
